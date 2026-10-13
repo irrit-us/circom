@@ -1,6 +1,29 @@
 <div align="center">
 <img src="mkdocs/docs/circom-logo-black.png" width="300"/>
 </div>
+
+## Circomscribe-style line constraints (this fork)
+
+This fork preserves the commit history of [iden3/circom](https://github.com/iden3/circom) and adds one commit on top of upstream commit `a100faedb1c62d4d3e1463f8a3f88342d82351cd` (Circom 2.2.3). Its added compiler options record which Circom source line generated each *template-level* constraint:
+
+```sh
+cargo build -p circom
+./target/debug/circom circuit.circom --line-constraints --line-constraints-json -o output
+```
+
+On this Windows workspace, the installed MSVC toolchain lacks a working Windows SDK setup. The installed GNU toolchain works:
+
+```powershell
+cargo +stable-x86_64-pc-windows-gnu build --target x86_64-pc-windows-gnu -p circom
+.\target\x86_64-pc-windows-gnu\debug\circom.exe circuit.circom --line-constraints --line-constraints-json -o output
+```
+
+The command writes `output/circuit_line_constraints.txt` and `output/circuit_line_constraints.json`. The text file prints every source line followed by its generated constraints. The JSON file contains `version`, `stage`, and `lines`; each line has its file path, one-based line number, source text, and zero or more constraints with template name, call stack, source byte span, and formatted equation. This works with `include` files, loops, template parameters, and the normal `--r1cs`, `--json`, and `--sym` options.
+
+The report captures constraints immediately after template instantiation. It is **before component expansion and optimization**; its count can differ from the final R1CS count. A line with `<--` alone has no constraint. `--line-constraints` is for a readable report, and `--line-constraints-json` is for tools consuming the mapping. Both options may be used together. The original compiler output is generated as usual.
+
+Run the local tests with `cargo test --workspace --exclude circom_algebra`. The upstream `circom_algebra` package has two failing tests on Windows with the GNU Rust toolchain; both failures reproduce at the unmodified upstream commit named above. To compare small circuits against the live [Circomscribe](https://www.circomscribe.dev/) API, build the compiler and run `python scripts/verify_circomscribe_api.py path/to/circom`. The API check compares source line numbers, constraint counts, named signal occurrences, and finite-field evaluations of each formatted equation. This comparison is a feedback check, not a formal proof of equivalence. The website uses an older compiler and does not accept `include` files, so the check uses four self-contained Circom 2 cases.
+
 <div align="center">
 
 [![Chat on Telegram][ico-telegram]][link-telegram]

@@ -107,6 +107,7 @@ dependencies = [
  "exitcode",
  "parser",
  "program_structure",
+ "serde_json",
  "type_analysis",
  "wast",
 ]
@@ -193,6 +194,7 @@ dependencies = [
  "num-bigint-dig",
  "num-traits",
  "program_structure",
+ "serde_json",
 ]
 
 [[package]]

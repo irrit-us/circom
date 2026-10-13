@@ -14,6 +14,8 @@ pub struct Input {
     pub out_c_code: PathBuf,
     pub out_c_dat: PathBuf,
     pub out_sym: PathBuf,
+    pub out_line_constraints: PathBuf,
+    pub out_line_constraints_json: PathBuf,
     //pub field: &'static str,
     pub c_flag: bool,
     pub wasm_flag: bool,
@@ -21,6 +23,8 @@ pub struct Input {
     pub no_asm_flag: bool,
     pub sanity_check_style: usize,
     pub r1cs_flag: bool,
+    pub line_constraints_flag: bool,
+    pub line_constraints_json_flag: bool,
     pub sym_flag: bool,
     pub json_constraint_flag: bool,
     pub json_substitution_flag: bool,
@@ -82,6 +86,8 @@ impl Input {
             out_c_code: Input::build_output(&output_c_path, &file_name, CPP),
             out_c_dat: Input::build_output(&output_c_path, &file_name, DAT),
             out_sym: Input::build_output(&output_path, &file_name, SYM),
+            out_line_constraints: Input::build_output(&output_path, &format!("{}_line_constraints", file_name), "txt"),
+            out_line_constraints_json: Input::build_output(&output_path, &format!("{}_line_constraints", file_name), JSON),
             out_json_constraints: Input::build_output(
                 &output_path,
                 &format!("{}_constraints", file_name),
@@ -98,6 +104,8 @@ impl Input {
             no_asm_flag:input_processing::get_no_asm(&matches),
             sanity_check_style: sanity_check_style as usize,
             r1cs_flag: input_processing::get_r1cs(&matches),
+            line_constraints_flag: input_processing::get_line_constraints(&matches),
+            line_constraints_json_flag: input_processing::get_line_constraints_json(&matches),
             sym_flag: input_processing::get_sym(&matches),
             main_inputs_flag: input_processing::get_main_inputs_log(&matches),
             json_constraint_flag: input_processing::get_json_constraints(&matches),
@@ -138,6 +146,12 @@ impl Input {
     }
     pub fn r1cs_file(&self) -> &str {
         self.out_r1cs.to_str().unwrap()
+    }
+    pub fn line_constraints_file(&self) -> Option<String> {
+        if self.line_constraints_flag { Some(self.out_line_constraints.to_string_lossy().into_owned()) } else { None }
+    }
+    pub fn line_constraints_json_file(&self) -> Option<String> {
+        if self.line_constraints_json_flag { Some(self.out_line_constraints_json.to_string_lossy().into_owned()) } else { None }
     }
     pub fn sym_file(&self) -> &str {
         self.out_sym.to_str().unwrap()
@@ -325,6 +339,12 @@ mod input_processing {
     pub fn get_r1cs(matches: &ArgMatches) -> bool {
         matches.is_present("print_r1cs")
     }
+    pub fn get_line_constraints(matches: &ArgMatches) -> bool {
+        matches.is_present("line_constraints")
+    }
+    pub fn get_line_constraints_json(matches: &ArgMatches) -> bool {
+        matches.is_present("line_constraints_json")
+    }
 
     pub fn get_wasm(matches: &ArgMatches) -> bool {
         matches.is_present("print_wasm")
@@ -488,6 +508,20 @@ mod input_processing {
                     .takes_value(false)
                     .display_order(30)
                     .help("Outputs the constraints in r1cs format"),
+            )
+            .arg(
+                Arg::with_name("line_constraints")
+                    .long("line-constraints")
+                    .takes_value(false)
+                    .display_order(35)
+                    .help("Writes source lines alongside the constraints each line generates, before expansion and optimization"),
+            )
+            .arg(
+                Arg::with_name("line_constraints_json")
+                    .long("line-constraints-json")
+                    .takes_value(false)
+                    .display_order(36)
+                    .help("Writes the source-to-constraint report as JSON"),
             )
             .arg(
                 Arg::with_name("print_wasm")

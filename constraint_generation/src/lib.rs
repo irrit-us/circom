@@ -5,6 +5,7 @@ mod compute_constants;
 mod environment_utils;
 mod execute;
 mod execution_data;
+mod line_constraints;
 mod assignment_utils;
 
 use ansi_term::Colour;
@@ -23,6 +24,8 @@ use program_structure::program_archive::ProgramArchive;
 use std::rc::Rc;
 
 pub struct BuildConfig {
+    pub line_constraints: Option<String>,
+    pub line_constraints_json: Option<String>,
     pub no_rounds: usize,
     pub flag_json_sub: bool,
     pub json_substitutions: String,
@@ -39,6 +42,7 @@ pub struct BuildConfig {
 pub struct FlagsExecution{
     pub verbose: bool,
     pub inspect: bool,
+    pub trace: bool,
 }
 
 pub type ConstraintWriter = Box<dyn ConstraintExporter>;
@@ -48,11 +52,20 @@ pub fn build_circuit(program: ProgramArchive, config: BuildConfig) -> BuildRespo
     let flags = FlagsExecution{
         verbose: config.flag_verbose,
         inspect: config.inspect_constraints,
+        trace: config.line_constraints.is_some() || config.line_constraints_json.is_some(),
     };
     let (exe, warnings) = instantiation(&program, flags, &config.prime).map_err(|r| {
         Report::print_reports(&r, &files);
     })?;
     Report::print_reports(&warnings, &files);
+    if config.line_constraints.is_some() || config.line_constraints_json.is_some() {
+        line_constraints::write_reports(
+            &exe,
+            &files,
+            config.line_constraints.as_deref(),
+            config.line_constraints_json.as_deref(),
+        ).map_err(|error| eprintln!("Could not write line constraints: {}", error))?;
+    }
     let (mut dag, mut vcp, warnings) = export(exe, program, flags).map_err(|r| {
         Report::print_reports(&r, &files);
     })?;

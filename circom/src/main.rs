@@ -28,6 +28,8 @@ fn start() -> Result<(), ()> {
     type_analysis_user::analyse_project(&mut program_archive)?;
 
     let config = ExecutionConfig {
+        line_constraints: user_input.line_constraints_file(),
+        line_constraints_json: user_input.line_constraints_json_file(),
         no_rounds: user_input.no_rounds(),
         flag_p: user_input.parallel_simplification_flag(),
         flag_s: user_input.reduced_simplification_flag(),

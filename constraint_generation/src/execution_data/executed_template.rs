@@ -5,7 +5,7 @@ use circom_algebra::algebra::ArithmeticExpression;
 use compiler::hir::very_concrete_program::*;
 use dag::DAG;
 use num_bigint::BigInt;
-use program_structure::ast::{SignalType, Statement};
+use program_structure::ast::{Meta, SignalType, Statement};
 use std::collections::{HashMap, HashSet};
 use crate::execution_data::AExpressionSlice;
 
@@ -70,6 +70,8 @@ pub struct ExecutedTemplate {
     pub intermediates: WireCollector,
     pub ordered_signals: WireCollector,
     pub constraints: Vec<Constraint>,
+    pub constraint_origins: Vec<ConstraintOrigin>,
+    trace_constraints: bool,
     pub components: ComponentCollector,
     pub number_of_components: usize,
     pub public_inputs: HashSet<String>,
@@ -87,6 +89,14 @@ pub struct ExecutedTemplate {
     pub is_extern_c: bool
 }
 
+#[derive(Clone)]
+pub struct ConstraintOrigin {
+    pub file_id: usize,
+    pub start: usize,
+    pub end: usize,
+    pub callstack: Vec<String>,
+}
+
 impl ExecutedTemplate {
     pub fn new(
         public: Vec<String>,
@@ -97,7 +107,8 @@ impl ExecutedTemplate {
         code: Statement,
         is_parallel: bool,
         is_custom_gate: bool,
-        is_extern_c: bool
+        is_extern_c: bool,
+        trace_constraints: bool,
     ) -> ExecutedTemplate {
         let public_inputs: HashSet<_> = public.iter().cloned().collect();
 
@@ -118,6 +129,8 @@ impl ExecutedTemplate {
             intermediates: WireCollector::new(),
             ordered_signals: WireCollector::new(),
             constraints: Vec::new(),
+            constraint_origins: Vec::new(),
+            trace_constraints,
             components: ComponentCollector::new(),
             number_of_components: 0,
             connexions: Vec::new(),
@@ -211,8 +224,16 @@ impl ExecutedTemplate {
         self.number_of_components += dimensions.iter().fold(1, |p, c| p * (*c));
     }
 
-    pub fn add_constraint(&mut self, constraint: Constraint) {
+    pub fn add_constraint(&mut self, constraint: Constraint, meta: &Meta, callstack: &[String]) {
         self.constraints.push(constraint);
+        if self.trace_constraints {
+            self.constraint_origins.push(ConstraintOrigin {
+                file_id: meta.get_file_id(),
+                start: meta.get_start(),
+                end: meta.get_end(),
+                callstack: callstack.to_vec(),
+            });
+        }
     }
 
     pub fn add_underscored_signal(&mut self, signal: &str) {

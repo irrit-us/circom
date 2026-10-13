@@ -6,6 +6,8 @@ use program_structure::program_archive::ProgramArchive;
 
 
 pub struct ExecutionConfig {
+    pub line_constraints: Option<String>,
+    pub line_constraints_json: Option<String>,
     pub r1cs: String,
     pub sym: String,
     pub json_constraints: String,
@@ -31,6 +33,8 @@ pub fn execute_project(
     use constraint_generation::{build_circuit, BuildConfig};
     let debug = DebugWriter::new(config.json_constraints).unwrap();
     let build_config = BuildConfig {
+        line_constraints: config.line_constraints,
+        line_constraints_json: config.line_constraints_json,
         no_rounds: config.no_rounds,
         flag_json_sub: config.json_substitution_flag,
         json_substitutions: config.json_substitutions,

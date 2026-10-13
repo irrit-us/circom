@@ -472,7 +472,7 @@ fn execute_statement(
                                 let symbol = signal_left;
                                 let expr = AExpr::sub(&symbol, &value_right, &p);
                                 let ctr = AExpr::transform_expression_to_constraint_form(expr, &p).unwrap();
-                                node.add_constraint(ctr);
+                                node.add_constraint(ctr, meta, &runtime.call_trace);
                             }
                         } else if let AssignOp::AssignSignal = op {// needs fix, check case arrays
                             //debug_assert!(possible_constraint.is_some());
@@ -665,7 +665,7 @@ fn execute_statement(
                 )
                 .unwrap();
                 if let Option::Some(node) = actual_node {
-                    node.add_constraint(constraint_expression);
+                    node.add_constraint(constraint_expression, meta, &runtime.call_trace);
                 }    
             }
             Option::None
@@ -3445,7 +3445,8 @@ fn execute_template_call(
             code,
             is_parallel,
             is_custom_gate,
-            is_extern_c
+            is_extern_c,
+            flags.trace,
         ));
         let (ret, _) = execute_sequence_of_statements(
             template_body,
